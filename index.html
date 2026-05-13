@@ -314,7 +314,7 @@ const posts = [
     excerpt: 'The threshold is not a place you pass through. It is a place you live.',
     body: `There is a category of experience that resists description because it has no stable edges. You are not one thing or another. You have left something and not yet arrived somewhere else. The word for this is liminal — from the Latin limen, meaning threshold — but the word undersells it. A threshold implies a door. What I am describing is more like standing in fog.
 
-I have spent a lot of time in fog. Between identities. Between the person I was when I started something and the person I am when I finish it. Between a life that fit and one that doesn't yet but might.
+I have spent a lot of time in fog. Between cities. Between identities. Between the person I was when I started something and the person I am when I finish it. Between a life that fit and one that doesn't yet but might.
 
 What I have come to think is that the liminal is not a failure state. It is a particular kind of attention. When you are not yet anything fixed, you notice more. The details of the world become vivid in the way they are vivid to someone who knows they are leaving — or arriving, which is the same thing.
 
@@ -386,10 +386,10 @@ function openPost(id) {
   document.getElementById('post-full-title').textContent = post.title;
   document.getElementById('post-full-body').innerHTML =
     post.body.split('\n').filter(l => l.trim()).map(p => `<p>${p}</p>`).join('');
-  showView('post');
+  showView('post', `/writing/${id}`);
 }
 
-function showView(view) {
+function showView(view, path) {
   const allViews = ['home', 'writing', 'post', 'connect'];
   allViews.forEach(v => {
     const el = document.getElementById(`view-${v}`);
@@ -398,6 +398,8 @@ function showView(view) {
     if (nav) nav.classList.toggle('active', v === view);
   });
   renderAll();
+  const url = path || (view === 'home' ? '/' : `/${view}`);
+  history.pushState({ view }, '', url);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -408,6 +410,19 @@ function scrollToNow() {
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   }, 80);
 }
+
+window.addEventListener('popstate', (e) => {
+  const view = e.state?.view || 'home';
+  const allViews = ['home', 'writing', 'post', 'connect'];
+  allViews.forEach(v => {
+    const el = document.getElementById(`view-${v}`);
+    if (el) el.style.display = v === view ? 'block' : 'none';
+    const nav = document.getElementById(`nav-${v}`);
+    if (nav) nav.classList.toggle('active', v === view);
+  });
+  renderAll();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
 
 function toggleCompose() {
   const form = document.getElementById('compose-form');
@@ -459,7 +474,21 @@ async function submitForm(e, formId, successId, formspreeId) {
   }
 }
 
-showView('home');
+// Route on initial load
+(function() {
+  const path = window.location.pathname.replace(/\/$/, '') || '/';
+  if (path.startsWith('/writing/')) {
+    const id = parseInt(path.split('/')[2]);
+    if (!isNaN(id)) { openPost(id); return; }
+  }
+  const map = { '/writing': 'writing', '/connect': 'connect', '/now': 'home' };
+  const view = map[path] || 'home';
+  showView(view, path === '/now' ? undefined : path);
+  if (path === '/now') setTimeout(() => {
+    const el = document.getElementById('now');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  }, 80);
+})();
 </script>
 </body>
 </html>
